@@ -1,0 +1,8 @@
+syntax = "proto2";
+
+message Process {
+        required int32 pid = 1;
+        required int32 ppid = 2;
+        required int32 tgid = 3;
+        required string name = 4;
+}

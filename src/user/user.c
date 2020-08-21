@@ -18,11 +18,29 @@
 #include <unistd.h>
 #include <bpf/bpf.h>
 #include "process_info.h"
+#include "process.pb-c.h"
 
 static int process_sample(void *ctx, void *data, size_t len)
 {
 	struct process_info *s = data;
 	printf("[PROCESS_INFO] ppid: %d, pid: %d, tgid: %d, name: %s\n", s->ppid, s->pid, s->tgid, s->name);
+	
+	Process p = PROCESS__INIT;
+	void *buf;  // Buffer to store serialized data
+	unsigned buf_len;  // Length of serialized data
+
+	p.name = malloc(sizeof(s->name));
+	p.ppid = s->ppid;
+	p.pid = s->pid;
+	p.tgid = s->tgid;
+	p.name = s->name;
+	buf_len = process__get_packed_size(&p);
+
+	buf = malloc(buf_len);
+	process__pack(&p, buf);
+
+	fwrite(buf, len, 1, stdout); // Write to stdout to allow direct command line piping
+	free(buf);
 	return 0;
 }
 
