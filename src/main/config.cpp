@@ -18,10 +18,8 @@ DEFINE_int32(n, 0, "Specifies the number of processes to monitor. The program wi
 DEFINE_int32(t, 0, "Specifies the number of seconds to monitor. The program will stop after t seconds.");
 
 // DATA EXPORT FLAGS
-DEFINE_string(save, "", "Specifies the format in which to save the terminal output in a separate file. Available formats are csv and protobuf.");
-DEFINE_validator(save, Config::check_save_and_export_format);
-DEFINE_string(export, "", "Specifies the format in which to export data in a separate file. Using export will not print to stdout. Available formats are csv and protobuf.");
-DEFINE_validator(export, Config::check_save_and_export_format);
+DEFINE_string(export_format, "", "Specifies the format in which to save the terminal output in a separate file. Available formats are csv and protobuf.");
+DEFINE_validator(export_format, Config::check_export_format);
 
 /*
 	END OF FLAGS SECTION
@@ -68,7 +66,7 @@ int Config::exec_monitor_parse_args_run()
 /*
 	FLAG VALIDATORS
 */
-bool Config::check_save_and_export_format(const char *flagname, const std::string &value)
+bool Config::check_export_format(const char *flagname, const std::string &value)
 {
 	// the default value has to be in the validator, otherwise error
 	return (value.compare("csv") == 0 or value.compare("protobuf") == 0 or value.compare("") == 0);

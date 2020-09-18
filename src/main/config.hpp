@@ -6,7 +6,13 @@
 #include <map>
 
 enum Usecase {
-	EXEC_MONITOR /* monitors process execution */
+	EXEC_MONITOR, /* monitors process execution */
+};
+
+enum ExportFormat {
+	CSV, /* exports the data in a CSV file */
+	PROTOBUF, /* exports the data using protobuf */
+	NO_EXPORT, /* simply prints the results to stdout */
 };
 
 class Config
@@ -18,12 +24,11 @@ class Config
 
 public:
 	Config();
-	static std::map<std::string, Usecase> usecase_map;
 
 	int exec_monitor_parse_args_run();
 
 	// VALIDATORS
-	static bool check_save_and_export_format(const char *flagname, const std::string &value);
+	static bool check_export_format(const char *flagname, const std::string &value);
 };
 
 #endif

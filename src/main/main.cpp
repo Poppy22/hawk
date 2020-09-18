@@ -12,7 +12,7 @@ std::map<std::string, Usecase> initialize_map()
 	return usecase_map;
 }
 
-bool existing_usecase(std::string key, std::map<std::string, Usecase> usecase_map)
+bool exists_usecase(std::string key, std::map<std::string, Usecase> usecase_map)
 {
 	return usecase_map.count(key);
 }
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
 
 	std::map<std::string, Usecase> usecase_map;
 	usecase_map = initialize_map();
-	if (!existing_usecase(FLAGS_monitor, usecase_map)) {
+	if (!exists_usecase(FLAGS_monitor, usecase_map)) {
 		std::cerr << "Incorrect value for monitor. Run hawk --help for instructions.\n";
 		gflags::ShutDownCommandLineFlags();
 		return -1;

@@ -17,6 +17,9 @@ foreach(filename ${files})
 	)
 endforeach()
 
+include(FindProtobuf)
+find_package(Protobuf REQUIRED)
+include_directories(${PROTOBUF_INCLUDE_DIR})
 find_package(gflags REQUIRED)
 
 set(SOURCE_FILES
@@ -26,6 +29,6 @@ set(SOURCE_FILES
 set(BPFToolPath "/root/linux/tools/lib/bpf")
 list(TRANSFORM files APPEND "_user.o")
 
-add_executable(hawk ${SOURCE_FILES} ${files})
+add_executable(hawk ${SOURCE_FILES} ${files} /root/hawk/src/include/process_info.pb.o)
 target_include_directories(hawk PUBLIC ${gflags_INCLUDE_DIR} include userspace)
-target_link_libraries(hawk gflags ${BPFToolPath}/libbpf.a elf z)
+target_link_libraries(hawk gflags ${PROTOBUF_LIBRARY} ${BPFToolPath}/libbpf.a elf z)

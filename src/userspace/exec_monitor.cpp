@@ -18,6 +18,7 @@
 #include <iostream>
 #include "exec_monitor.skel.h"
 #include "process_info.h"
+#include "process_info.pb.h"
 #include "exec_monitor.hpp"
 
 static int process_sample(void *ctx, void *data, size_t len)
@@ -28,6 +29,22 @@ static int process_sample(void *ctx, void *data, size_t len)
 
 	struct process_info *s = (process_info*)data;
 	printf("%d\t%d\t%d\t%s\n", s->ppid, s->pid, s->tgid, s->name);
+
+	// protobuff
+	ProcessInfo *process;
+	std::cout << "start" << std::endl;
+	process->set_ppid(s->ppid);
+	std::cout << "ppid" << std::endl;
+	process->set_pid(s->ppid);
+	std::cout << "pid" << std::endl;
+	process->set_tgid(s->tgid);
+	std::cout << "tgid" << std::endl;
+	process->set_name(s->name);
+	std::cout << "name" << std::endl;
+
+	std::cout << process << std::endl;
+	//fstream output(argv[1], ios::out | ios::trunc | ios::binary);
+    	//if (!process.SerializeToOstream(&output))
 	return 0;
 }
 
