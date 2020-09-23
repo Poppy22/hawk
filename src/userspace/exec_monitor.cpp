@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <bpf/bpf.h>
 #include <iostream>
+#include <string.h>
 #include "exec_monitor.skel.h"
 #include "process_info.h"
 #include "exec_monitor.hpp"
@@ -43,7 +44,6 @@ int ExecMonitor::run()
 	struct exec_monitor *skel = NULL;
 	skel = exec_monitor__open_and_load();
 
-
 	if (!skel) {
 		std::cerr << "[EXEC_MONITOR]: Error loading the eBPF program.\n";
 		exec_monitor__destroy(skel);
@@ -69,6 +69,19 @@ int ExecMonitor::run()
 		std::cerr << "[EXEC_MONITOR]: Error allocating the ringbufffer.\n";
 		exec_monitor__destroy(skel);
 		return -1;
+	}
+
+	if (ppid_list.size() != 0) {
+		skel->bss->filter_by_ppid = 1;
+		skel->bss->ppid_list_size = ppid_list.size();
+		for (int i = 0; i < ppid_list.size(); i++) {
+			skel->bss->ppid_list[i] = ppid_list[i];
+		}
+	}
+
+	if (names_list.size() != 0) {
+		skel->bss->filter_by_name = 1;
+		skel->bss->name = name_list[0];
 	}
 	
 	printf("PPID\tPID\tTGID\tPCOM\n");
