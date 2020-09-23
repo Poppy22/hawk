@@ -18,7 +18,6 @@
 #include <bpf/bpf_tracing.h>
 #include <bpf/bpf_core_read.h>
 #include "process_info.h"
-#include <cstring>
 
 struct {
 	__uint(type, BPF_MAP_TYPE_RINGBUF);
@@ -29,12 +28,20 @@ long ringbuffer_flags = 0;
 int filter_by_ppid;
 int ppid_list[10];
 int ppid_list_size;
+
 int filter_by_name;
 char name[20];
+
+int max_n_proc;
+int n_monitored_proc;
 
 SEC("lsm/bprm_committed_creds")
 void BPF_PROG(exec_audit, struct linux_binprm *bprm)
 {
+	if (max_n_proc != 0 && n_monitored_proc == max_n_proc) {
+		return;
+	}
+
 	long pid_tgid;
 	int ppid, selected_ppid = 0;
 	struct process_info *process;
@@ -75,6 +82,9 @@ void BPF_PROG(exec_audit, struct linux_binprm *bprm)
 	bpf_get_current_comm(&process->name, sizeof(process->name));
 
 	bpf_ringbuf_submit(process, ringbuffer_flags);
+	if (max_n_proc) {
+		n_monitored_proc++;
+	}
 }
 
 char _license[] SEC("license") = "GPL";

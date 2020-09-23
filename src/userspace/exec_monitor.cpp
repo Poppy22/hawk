@@ -71,6 +71,11 @@ int ExecMonitor::run()
 		return -1;
 	}
 
+	if (n_proc > 0) {
+		skel->bss->n_monitored_proc = 0;
+		skel->bss->max_n_proc = n_proc;
+	}
+
 	if (ppid_list.size() != 0) {
 		skel->bss->filter_by_ppid = 1;
 		skel->bss->ppid_list_size = ppid_list.size();
@@ -79,15 +84,19 @@ int ExecMonitor::run()
 		}
 	}
 
-	if (names_list.size() != 0) {
+	if (name_list.size() != 0) {
 		skel->bss->filter_by_name = 1;
-		skel->bss->name = name_list[0];
+		//memcpy(skel->bss->name, name_list[0], strlen(name_list[0]) + 1);
 	}
 	
 	printf("PPID\tPID\tTGID\tPCOM\n");
 	while (1) {
 		// poll for new data with a timeout of -1 ms, waiting indefinitely
 		int x = ring_buffer__poll(ringbuffer, -1);
+
+		if (n_proc > 0 && n_proc == skel->bss->n_monitored_proc) {
+			break;
+		}
 	}
 
 	exec_monitor__destroy(skel);
