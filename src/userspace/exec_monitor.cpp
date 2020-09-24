@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <bpf/bpf.h>
 #include <iostream>
+#include <string.h>
 #include "exec_monitor.skel.h"
 #include "process_info.hpp"
 #include "exec_monitor.hpp"
@@ -71,7 +72,18 @@ int ExecMonitor::run()
 		skel->bss->max_n_proc = n_proc;
 	}
 
-	
+	if (ppid_list.size() != 0) {
+		skel->bss->filter_by_ppid = 1;
+		int list_size = 10;
+		if (ppid_list.size() < 10) {
+			list_size = ppid_list.size();
+		}
+		skel->bss->ppid_list_size = list_size;
+		for (int i = 0; i < list_size; i++) {
+			skel->bss->ppid_list[i] = ppid_list[i];
+		}
+	}
+
 	printf("PPID\tPID\tTGID\tPCOM\n");
 	while (1) {
 		// poll for new data with a timeout of -1 ms, waiting indefinitely

@@ -14,7 +14,8 @@ DEFINE_string(monitor, "exec", "Defines the usecase of the program. The default 
 DEFINE_validator(monitor, Config::check_monitor_type);
 
 // EXEC FLAG - MONITOR PROCESS EXECUTION
-DEFINE_string(ppid, "", "Specifies the parent pid(s) of the processes to monitor using comma-separated values.");
+DEFINE_string(ppid, "", "Specifies the parent pid(s) of the processes to monitor using comma-separated values. "
+		"The list should contain maximum 10 elements. If more are specified, only the first 10 will be used.");
 DEFINE_string(name, "", "Specifies the name(s) of the processes to monitor using comma-separated values.");
 DEFINE_int32(n, 0, "Specifies the number of processes to monitor. The program will stop after n processes were executed. "
 		"If the given n is zero or a negative number, then this flag is not used and monitored processes will not be counted.");
