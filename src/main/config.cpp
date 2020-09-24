@@ -16,7 +16,8 @@ DEFINE_validator(monitor, Config::check_monitor_type);
 // EXEC FLAG - MONITOR PROCESS EXECUTION
 DEFINE_string(ppid, "", "Specifies the parent pid(s) of the processes to monitor using comma-separated values.");
 DEFINE_string(name, "", "Specifies the name(s) of the processes to monitor using comma-separated values.");
-DEFINE_int32(n, 0, "Specifies the number of processes to monitor. The program will stop after n processes were executed.");
+DEFINE_int32(n, 0, "Specifies the number of processes to monitor. The program will stop after n processes were executed. "
+		"If the given n is zero or a negative number, then this flag is not used and monitored processes will not be counted.");
 
 // DATA EXPORT FLAGS
 DEFINE_string(format, "", "Specifies the format in which to save the terminal output in a separate file. Available formats are csv and protobuf.");

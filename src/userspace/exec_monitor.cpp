@@ -65,11 +65,20 @@ int ExecMonitor::run()
 		std::cerr << "[EXEC_MONITOR]: Error allocating the ringbufffer.\n";
 		goto out;
 	}
+
+	if (n_proc > 0) {
+		skel->bss->n_monitored_proc = 0;
+		skel->bss->max_n_proc = n_proc;
+	}
+
 	
 	printf("PPID\tPID\tTGID\tPCOM\n");
 	while (1) {
 		// poll for new data with a timeout of -1 ms, waiting indefinitely
 		int x = ring_buffer__poll(ringbuffer, -1);
+
+		if (n_proc > 0 && n_proc == skel->bss->n_monitored_proc)
+			break;
 	}
 
 	exec_monitor__destroy(skel);

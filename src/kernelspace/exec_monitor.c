@@ -25,10 +25,15 @@ struct {
 } ringbuf SEC(".maps");
 
 long ringbuffer_flags = 0;
+int max_n_proc;
+int n_monitored_proc;
 
 SEC("lsm/bprm_committed_creds")
 void BPF_PROG(exec_audit, struct linux_binprm *bprm)
 {
+	if (max_n_proc != 0 && n_monitored_proc == max_n_proc)
+		return;
+
 	long pid_tgid;
 	struct process_info *process;
 	struct task_struct *current_task;
@@ -51,6 +56,9 @@ void BPF_PROG(exec_audit, struct linux_binprm *bprm)
 	bpf_get_current_comm(&process->name, sizeof(process->name));
 
 	bpf_ringbuf_submit(process, ringbuffer_flags);
+	if (max_n_proc) {
+		n_monitored_proc++;
+	}
 }
 
 char _license[] SEC("license") = "GPL";
