@@ -30,7 +30,8 @@ int ppid_list[10];
 int ppid_list_size;
 
 int filter_by_name;
-char name[20];
+char name_list[5][21];
+int name_list_size;
 
 int max_n_proc;
 int n_monitored_proc;
@@ -44,6 +45,8 @@ void BPF_PROG(exec_audit, struct linux_binprm *bprm)
 
 	long pid_tgid;
 	int ppid, selected_ppid = 0;
+	char task_name[21];
+	int selected_name = 0;
 	struct process_info *process;
 	struct task_struct *current_task;
 
@@ -57,12 +60,42 @@ void BPF_PROG(exec_audit, struct linux_binprm *bprm)
 				selected_ppid = 1;
 				break;
 			}
-			if (i == ppid_list_size) {
+			if (i == ppid_list_size)
 				break;
-			}
 		}
 
 		if (!selected_ppid) {
+			return; // No need to continue monitoring this process
+		}
+	}
+
+	if (filter_by_name) {
+		// Get the executable name
+		bpf_get_current_comm(&task_name, sizeof(task_name));
+		for (int i = 0; i < 10; i++) {
+			// if (__builtin_strcmp(name_list[i], task_name) == 0) {
+			// 	selected_name = 1;
+			// 	break;
+			// }
+
+			if (i == name_list_size)
+				break;
+
+			int j = 0;
+			while (1) {
+				if (name_list[i][j] != task_name[j]) {
+					break;
+				}
+				if (name_list[i][j] == '\0' && task_name[j] == '\0') {
+					selected_name = 1;
+				}
+				j++;
+			}
+
+			selected_name = 1;
+		}
+
+		if (!selected_name) {
 			return; // No need to continue monitoring this process
 		}
 	}
@@ -77,9 +110,7 @@ void BPF_PROG(exec_audit, struct linux_binprm *bprm)
 	process->pid = pid_tgid;
 	process->tgid = pid_tgid >> 32;
 	process->ppid = ppid;
-
-	// Get the executable name
-	bpf_get_current_comm(&process->name, sizeof(process->name));
+	__builtin_memcpy(process->name, task_name, sizeof(task_name));
 
 	bpf_ringbuf_submit(process, ringbuffer_flags);
 	if (max_n_proc) {

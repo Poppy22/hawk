@@ -86,7 +86,10 @@ int ExecMonitor::run()
 
 	if (name_list.size() != 0) {
 		skel->bss->filter_by_name = 1;
-		//memcpy(skel->bss->name, name_list[0], strlen(name_list[0]) + 1);
+		skel->bss->name_list_size = name_list.size();
+		for (int i = 0; i < name_list.size(); i++) {
+			strcpy(skel->bss->name_list[i], name_list[i].c_str());
+		}
 	}
 	
 	printf("PPID\tPID\tTGID\tPCOM\n");
