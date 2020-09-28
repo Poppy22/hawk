@@ -16,26 +16,47 @@
 #include <unistd.h>
 #include <bpf/bpf.h>
 #include <iostream>
+#include <functional>
 #include "exec_monitor.skel.h"
 #include "process_info.hpp"
+#include "process_info.pb.h"
 #include "exec_monitor.hpp"
 
+std::fstream file;
+ExportFormat export_format;
 static int process_sample(void *ctx, void *data, size_t len)
 {
-	if(len < sizeof(struct process_info)) {
+	if(len < sizeof(struct process_info))
 		return -1;
-	}
 
 	struct process_info *s = (process_info*)data;
-	printf("%d\t%d\t%d\t%s\n", s->ppid, s->pid, s->tgid, s->name);
+	ExecMonitor *exec_monitor = exec_monitor->get_instance();
+	exec_monitor->export_data(s);
 	return 0;
 }
 
-ExecMonitor::ExecMonitor(Config config)
+ExecMonitor *ExecMonitor::instance = 0;
+ExecMonitor::ExecMonitor(Config *config)
 {
-	n_proc = config.n_proc;
-	ppid_list = config.ppid_list;
-	name_list = config.name_list;
+	n_proc = config->n_proc;
+	ppid_list = config->ppid_list;
+	name_list = config->name_list;
+	export_format = config->export_format;
+	filename = config->filename;
+}
+
+ExecMonitor *ExecMonitor::create_instance(Config *config)
+{
+	if (!instance)
+		instance = new ExecMonitor(config);
+	return instance;
+}
+
+ExecMonitor *ExecMonitor::get_instance()
+{
+	if (instance)
+		return instance;
+	return nullptr;
 }
 
 int ExecMonitor::run()
@@ -66,7 +87,9 @@ int ExecMonitor::run()
 		goto out;
 	}
 	
-	printf("PPID\tPID\tTGID\tPCOM\n");
+	if (export_format == STDOUT)
+		printf("PPID\tPID\tTGID\tPCOM\n");
+
 	while (1) {
 		// poll for new data with a timeout of -1 ms, waiting indefinitely
 		int x = ring_buffer__poll(ringbuffer, -1);
@@ -81,4 +104,45 @@ out:
 
 }
 
-int ExecMonitor::export_data() { return 0;} // TODO
+void ExecMonitor::export_data(process_info *p)
+{
+	if (export_format == STDOUT)
+	{
+		printf("%d\t%d\t%d\t%s\n", p->ppid, p->pid, p->tgid, p->name);
+		return;
+	}
+
+	file.open(filename, std::ios::out | std::ios::app | std::ios::binary);
+	if (!file)
+	{
+		std::cout << "Could not create file at path: " << filename << "\n";
+		std::cout << "Writing to default location: " << default_filename << "\n";
+		file.open(default_filename, std::ios::out | std::ios::app | std::ios::binary);
+		if (!file)
+		{
+			std::cerr << "Could not open file.\n";
+			return;
+		}
+	}
+
+	switch (export_format) {
+	case ExportFormat::CSV:
+		file << p->ppid << "," << p->pid << "," << p->tgid << "," << p->name << "\n";
+		break;
+
+	case ExportFormat::PROTOBUF:
+		ExecOutput exec_output;
+		ProcessInfo *process = exec_output.add_process_info();
+		process->set_ppid(p->ppid);
+		process->set_pid(p->pid);
+		process->set_tgid(p->tgid);
+		process->set_name(p->name);
+		if (!exec_output.SerializeToOstream(&file)) {
+			std::cerr << "Failed to write the output to file." << std::endl;
+			return;
+		}
+		break;
+	}
+
+	file.close();
+}

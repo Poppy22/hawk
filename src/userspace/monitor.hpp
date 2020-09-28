@@ -2,13 +2,14 @@
 #define MONITOR_HPP
 
 #include <string>
+#include "process_info.hpp"
 class Monitor {
 private:
 	/*
 		Function called if the --format flag is specified.
 		Prints the execution summary in the specified format.
 	*/
-	virtual int export_data() = 0;
+	virtual void export_data(process_info *process_info) = 0;
 
 public:
 	/*

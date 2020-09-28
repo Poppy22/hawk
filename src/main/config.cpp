@@ -19,7 +19,7 @@ DEFINE_string(name, "", "Specifies the name(s) of the processes to monitor using
 DEFINE_int32(n, 0, "Specifies the number of processes to monitor. The program will stop after n processes were executed.");
 
 // DATA EXPORT FLAGS
-DEFINE_string(format, "", "Specifies the format in which to save the terminal output in a separate file. Available formats are csv and protobuf.");
+DEFINE_string(format, "stdout", "Specifies the format in which to save the terminal output in a separate file. Available formats are csv and protobuf.");
 DEFINE_validator(format, Config::check_format_type);
 DEFINE_string(output_file, "", "Specifies the path to write the ouput or where to create the file, if it does not exist at that path.");
 
@@ -28,9 +28,16 @@ DEFINE_string(output_file, "", "Specifies the path to write the ouput or where t
 */
 
 std::map<std::string, Usecase> usecase_map = {
-    {"exec", EXEC_MONITOR}
+	{"exec", EXEC_MONITOR},
 };
 
+std::map<std::string, ExportFormat> export_format_map = {
+	{"csv", CSV},
+	{"protobuf", PROTOBUF},
+	{"stdout", STDOUT},
+};
+
+Config *Config::instance = 0;
 Config::Config(int argc, char *argv[])
 {
 	gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -44,10 +51,29 @@ Config::Config(int argc, char *argv[])
 		break;
 	}
 
+	export_format = export_format_map[FLAGS_format];
+	if (export_format != STDOUT && !gflags::GetCommandLineFlagInfoOrDie("output_file").is_default)
+		filename = FLAGS_output_file;
+
 	gflags::ShutDownCommandLineFlags();
 }
 
-bool Config::is_input_valid() {
+Config *Config::create_instance(int argc, char *argv[])
+{
+	if (!instance)
+		instance = new Config(argc, argv);
+	return instance;
+}
+
+Config* Config::get_instance()
+{
+	if (instance)
+		return instance;
+	return nullptr;
+}
+
+bool Config::is_input_valid()
+{
 	return valid;
 }
 
@@ -95,6 +121,5 @@ bool Config::check_monitor_type(const char *flagname, const std::string &value)
 
 bool Config::check_format_type(const char *flagname, const std::string &value)
 {
-	// the default value has to be in the validator, otherwise error
-	return (value.compare("csv") == 0 or value.compare("protobuf") == 0 or value.compare("") == 0);
+	return export_format_map.count(value);
 }

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+message ProcessInfo {
+  int32 pid = 1;
+  int32 ppid = 2;
+  int32 tgid = 3;
+  string name = 4;
+}
+
+message ExecOutput {
+  repeated ProcessInfo process_info = 1;
+}
