@@ -28,32 +28,32 @@ long ringbuffer_flags = 0;
 int max_n_proc;
 int n_monitored_proc;
 
-int filter_by_ppid;
 int ppid_list[10];
 int ppid_list_size;
 
 SEC("lsm/bprm_committed_creds")
 void BPF_PROG(exec_audit, struct linux_binprm *bprm)
 {
-	if (max_n_proc != 0 && n_monitored_proc == max_n_proc)
-		return;
-
 	long pid_tgid;
 	int ppid, selected_ppid = 0;
 	struct process_info *process;
 	struct task_struct *current_task;
 
+	if (max_n_proc != 0 && n_monitored_proc == max_n_proc)
+		return;
+
 	// Get the parent pid
 	current_task = (struct task_struct *)bpf_get_current_task();
 	ppid = (int)BPF_CORE_READ(current_task, real_parent, pid);
 
-	if (filter_by_ppid) {
-		for (int i = 0; i < 10; i++) {
+	if (ppid_list_size > 0) {
+		for (int i = 0; i < PPID_LIST_MAP_LEN; i++) {
 			if (ppid == ppid_list[i]) {
 				selected_ppid = 1;
 				break;
 			}
-			if (i == ppid_list_size)
+
+			if (i + 1 == ppid_list_size)
 				break;
 		}
 

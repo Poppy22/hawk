@@ -5,7 +5,7 @@
 #include <string>
 #include "../main/config.hpp"
 #include "monitor.hpp"
-
+#include "process_info.hpp"
 class ExecMonitor : public Monitor
 {
 private:

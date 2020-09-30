@@ -16,16 +16,14 @@
 #include <unistd.h>
 #include <bpf/bpf.h>
 #include <iostream>
-#include <string.h>
 #include "exec_monitor.skel.h"
 #include "process_info.hpp"
 #include "exec_monitor.hpp"
 
 static int process_sample(void *ctx, void *data, size_t len)
 {
-	if(len < sizeof(struct process_info)) {
+	if(len < sizeof(struct process_info))
 		return -1;
-	}
 
 	struct process_info *s = (process_info*)data;
 	printf("%d\t%d\t%d\t%s\n", s->ppid, s->pid, s->tgid, s->name);
@@ -36,7 +34,6 @@ ExecMonitor::ExecMonitor(Config config)
 {
 	n_proc = config.n_proc;
 	ppid_list = config.ppid_list;
-	name_list = config.name_list;
 }
 
 int ExecMonitor::run()
@@ -68,16 +65,11 @@ int ExecMonitor::run()
 	}
 
 	if (n_proc > 0) {
-		skel->bss->n_monitored_proc = 0;
 		skel->bss->max_n_proc = n_proc;
 	}
 
 	if (ppid_list.size() != 0) {
-		skel->bss->filter_by_ppid = 1;
-		int list_size = 10;
-		if (ppid_list.size() < 10) {
-			list_size = ppid_list.size();
-		}
+		int list_size = std::min<int>(ppid_list.size(), PPID_LIST_MAP_LEN);
 		skel->bss->ppid_list_size = list_size;
 		for (int i = 0; i < list_size; i++) {
 			skel->bss->ppid_list[i] = ppid_list[i];
