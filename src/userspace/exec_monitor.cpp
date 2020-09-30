@@ -22,22 +22,22 @@
 #include "process_info.pb.h"
 #include "exec_monitor.hpp"
 
-std::fstream file;
-ExportFormat export_format;
+
 static int process_sample(void *ctx, void *data, size_t len)
 {
 	if(len < sizeof(struct process_info))
 		return -1;
 
 	struct process_info *s = (process_info*)data;
-	ExecMonitor *exec_monitor = exec_monitor->get_instance();
+	ExecMonitor *exec_monitor = (ExecMonitor *)ctx;
 	exec_monitor->export_data(s);
 	return 0;
 }
 
-ExecMonitor *ExecMonitor::instance = 0;
-ExecMonitor::ExecMonitor(Config *config)
+ExecMonitor *ExecMonitor::instance = nullptr;
+ExecMonitor::ExecMonitor()
 {
+	Config *config = Config::get_instance();
 	n_proc = config->n_proc;
 	ppid_list = config->ppid_list;
 	name_list = config->name_list;
@@ -45,18 +45,16 @@ ExecMonitor::ExecMonitor(Config *config)
 	filename = config->filename;
 }
 
-ExecMonitor *ExecMonitor::create_instance(Config *config)
+ExecMonitor *ExecMonitor::create_instance()
 {
 	if (!instance)
-		instance = new ExecMonitor(config);
+		instance = new ExecMonitor();
 	return instance;
 }
 
 ExecMonitor *ExecMonitor::get_instance()
 {
-	if (instance)
-		return instance;
-	return nullptr;
+	return instance;
 }
 
 int ExecMonitor::run()
@@ -81,14 +79,14 @@ int ExecMonitor::run()
 		goto out;
 	}
 
-	ringbuffer = ring_buffer__new(ringbuffer_fd, process_sample, NULL, NULL);
+	ringbuffer = ring_buffer__new(ringbuffer_fd, process_sample, this, NULL);
 	if (!ringbuffer) {
 		std::cerr << "[EXEC_MONITOR]: Error allocating the ringbufffer.\n";
 		goto out;
 	}
 	
 	if (export_format == STDOUT)
-		printf("PPID\tPID\tTGID\tPCOM\n");
+		std::cout << "PPID\tPID\tTGID\tPCOM\n";
 
 	while (1) {
 		// poll for new data with a timeout of -1 ms, waiting indefinitely
@@ -108,21 +106,14 @@ void ExecMonitor::export_data(process_info *p)
 {
 	if (export_format == STDOUT)
 	{
-		printf("%d\t%d\t%d\t%s\n", p->ppid, p->pid, p->tgid, p->name);
+		std::cout << p->ppid <<"\t" << p->pid << "\t" << p->tgid << "\t" << p->name << std::endl;
 		return;
 	}
 
 	file.open(filename, std::ios::out | std::ios::app | std::ios::binary);
 	if (!file)
 	{
-		std::cout << "Could not create file at path: " << filename << "\n";
-		std::cout << "Writing to default location: " << default_filename << "\n";
-		file.open(default_filename, std::ios::out | std::ios::app | std::ios::binary);
-		if (!file)
-		{
-			std::cerr << "Could not open file.\n";
-			return;
-		}
+		std::cerr << "Could not create file at path: " << filename << "\n";
 	}
 
 	switch (export_format) {

@@ -11,9 +11,8 @@ class ExecMonitor : public Monitor
 {
 private:
 	static ExecMonitor *instance;
-	ExecMonitor(Config *config);
+	ExecMonitor();
 
-	const std::string default_filename = "exec_monitor_output";
 	std::string filename;
 	ExportFormat export_format;
 	std::fstream file;
@@ -25,8 +24,8 @@ private:
 public:
 	int run();
 	void export_data(process_info *process_info);
-	ExecMonitor *create_instance(Config *config);
-	ExecMonitor *get_instance();
+	static ExecMonitor *create_instance();
+	static ExecMonitor *get_instance();
 };
 
 #endif

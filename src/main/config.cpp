@@ -19,9 +19,9 @@ DEFINE_string(name, "", "Specifies the name(s) of the processes to monitor using
 DEFINE_int32(n, 0, "Specifies the number of processes to monitor. The program will stop after n processes were executed.");
 
 // DATA EXPORT FLAGS
-DEFINE_string(format, "stdout", "Specifies the format in which to save the terminal output in a separate file. Available formats are csv and protobuf.");
+DEFINE_string(format, "stdout", "Specifies the format in which to save the terminal output in a separate file. Available formats are csv, protobuf and stdout, the last being the default value.");
 DEFINE_validator(format, Config::check_format_type);
-DEFINE_string(output_file, "", "Specifies the path to write the ouput or where to create the file, if it does not exist at that path.");
+DEFINE_string(output_file, "monitor_output", "Specifies the path to write the ouput or where to create the file, if it does not exist at that path.");
 
 /*
 	END OF FLAGS SECTION
@@ -37,7 +37,7 @@ std::map<std::string, ExportFormat> export_format_map = {
 	{"stdout", STDOUT},
 };
 
-Config *Config::instance = 0;
+Config *Config::instance = nullptr;
 Config::Config(int argc, char *argv[])
 {
 	gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -52,8 +52,7 @@ Config::Config(int argc, char *argv[])
 	}
 
 	export_format = export_format_map[FLAGS_format];
-	if (export_format != STDOUT && !gflags::GetCommandLineFlagInfoOrDie("output_file").is_default)
-		filename = FLAGS_output_file;
+	filename = FLAGS_output_file;
 
 	gflags::ShutDownCommandLineFlags();
 }
@@ -67,9 +66,7 @@ Config *Config::create_instance(int argc, char *argv[])
 
 Config* Config::get_instance()
 {
-	if (instance)
-		return instance;
-	return nullptr;
+	return instance;
 }
 
 bool Config::is_input_valid()

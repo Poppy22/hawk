@@ -5,7 +5,7 @@
 int main(int argc, char *argv[])
 {
 	int ret = 0;
-	Config *config = config->create_instance(argc, argv);
+	Config *config = Config::create_instance(argc, argv);
 
 	if (!config->is_input_valid())
 		return -1;
@@ -13,7 +13,7 @@ int main(int argc, char *argv[])
 	// the set usecase is certainly valid at this point
 	switch (config->usecase) {
 	case Usecase::EXEC_MONITOR:
-		ExecMonitor *exec_monitor = exec_monitor->create_instance(config);
+		ExecMonitor *exec_monitor = ExecMonitor::create_instance();
 		ret = exec_monitor->run();
 		break;
 	}
