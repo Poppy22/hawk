@@ -26,12 +26,33 @@ struct {
 
 long ringbuffer_flags = 0;
 
+int ppid_list[10];
+int ppid_list_size;
+
 SEC("lsm/bprm_committed_creds")
 void BPF_PROG(exec_audit, struct linux_binprm *bprm)
 {
 	long pid_tgid;
+	int ppid, selected_ppid = 0;
 	struct process_info *process;
 	struct task_struct *current_task;
+
+	current_task = (struct task_struct *)bpf_get_current_task();
+	ppid = (int)BPF_CORE_READ(current_task, real_parent, pid);
+
+	if (ppid_list_size > 0) {
+		for (int i = 0; i < 10; i++) {
+			if (ppid == ppid_list[i]) {
+				selected_ppid = 1;
+				break;
+			}
+			if (i == ppid_list_size)
+				break;
+		}
+
+		if (!selected_ppid)
+			return; // No need to continue monitoring this process
+	}
 
 	// Reserve space on the ringbuffer for the sample
 	process = bpf_ringbuf_reserve(&ringbuf, sizeof(*process), ringbuffer_flags);
@@ -42,10 +63,7 @@ void BPF_PROG(exec_audit, struct linux_binprm *bprm)
 	pid_tgid = bpf_get_current_pid_tgid();
 	process->pid = pid_tgid;
 	process->tgid = pid_tgid >> 32;
-
-	// Get the parent pid
-	current_task = (struct task_struct *)bpf_get_current_task();
-	process->ppid = BPF_CORE_READ(current_task, real_parent, pid);
+	process->ppid = ppid;
 
 	// Get the executable name
 	bpf_get_current_comm(&process->name, sizeof(process->name));

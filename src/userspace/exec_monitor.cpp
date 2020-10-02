@@ -18,7 +18,6 @@
 #include <iostream>
 #include <functional>
 #include "exec_monitor.skel.h"
-#include "process_info.hpp"
 #include "process_info.pb.h"
 #include "exec_monitor.hpp"
 
@@ -30,6 +29,16 @@ static int process_sample(void *ctx, void *data, size_t len)
 
 	struct process_info *s = (process_info*)data;
 	ExecMonitor *exec_monitor = (ExecMonitor *)ctx;
+
+	// if -n flag is set, check if n processes were already processed
+	if (exec_monitor->n_proc > 0 && exec_monitor->proc_count == exec_monitor->n_proc)
+		return 0;
+
+
+	// count the current process if -n flag is set
+	if (exec_monitor->n_proc > 0)
+		exec_monitor->proc_count++;
+
 	exec_monitor->export_data(s);
 	return 0;
 }
@@ -88,9 +97,21 @@ int ExecMonitor::run()
 	if (export_format == STDOUT)
 		std::cout << "PPID\tPID\tTGID\tPCOM\n";
 
+	if (ppid_list.size() != 0) {
+		int list_size = std::min<int>(ppid_list.size(), PPID_LIST_MAP_LEN);
+		skel->bss->ppid_list_size = list_size;
+		for (int i = 0; i < list_size; i++) {
+			skel->bss->ppid_list[i] = ppid_list[i];
+		}
+	}
+
 	while (1) {
 		// poll for new data with a timeout of -1 ms, waiting indefinitely
 		int x = ring_buffer__poll(ringbuffer, -1);
+
+		// if -n flag is set, check if n processes were already recorded
+		if (n_proc > 0 && proc_count == n_proc)
+			break;
 	}
 
 	exec_monitor__destroy(skel);
