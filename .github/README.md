@@ -16,8 +16,11 @@ HAWK has a mandatory flag that should be used whenever run, `--monitor`. The val
 - how to use it: ```./hawk --monitor=exec```
 - optional flags:
 	- --ppid: comma-separated list; monitors only processes that have their ppid in the given list
-	- --name: comma-separated list; monitors only processed that have their executable name in the given list
+	- [TODO]--name: comma-separated list; monitors only processed that have their executable name in the given list
 	- -n: number; monitors the first n processes that are executed after running hawk
+	- --format: specifies the output format; could be `stdout`, `csv`, `protobuf` (binary)
+	- --output_file: specifies the output file; if not used, will create and print to `monitor_output`
+- running example: `./hawk --monitor=exec -n 3 --ppid=300,599 -format=csv --output_file=output.csv`
 
 ## 3. Development setup
 
@@ -56,6 +59,13 @@ make
 sudo make install
 ```
 
+**[protobuf](https://developers.google.com/protocol-buffers/docs/cpptutorial)**
+
+Install the protobuf compiler. This is needed to export the data in binary format.
+```
+apt install -y protobuf-compiler
+```
+
 ## 4. Compiling and running HAWK
 
 The compilation process is automated using cmake. After following the set-up instructions, go to `hawk/src` and run the following commands:
@@ -70,13 +80,13 @@ To monitor process execution, run:
 ```
 ./hawk --monitor=exec
 ```
-Then open a new terminal and type commands (`ls` and `cat` for instance). The expected output is:
+Then open a new terminal and type commands (`ls` and `ps`, `w` for instance). The expected output is:
 ```
 PPID    PID     TGID    PCOM
 244     1218    1218    ls
 244     1219    1219    ls
 244     1220    1220    ls
-244     1221    1221    cat
+244     1221    1221    ps
 ```
 
 ## 5. Contributing
@@ -89,7 +99,7 @@ If you want to add a new usecase X, here's what you should do.
 	- SEC(str): shows what LSM hook to use to attach to the kernel
 	- void BPF_PROG(): the actual code for the BPF program that is executed
 
-2. Implement the userspace class for that usecase in C++ in **src/userspace**. This class contains the userspace program that loads the BPF program into the kernel using libbpf. It should contain:
+2. Implement the userspace class for that usecase in C++ in **src/userspace**. It should extend `monitor.hpp`. This class contains the userspace program that loads the BPF program into the kernel using libbpf. It should contain:
 - a primary function that loads the BPF program and polls for data for the ringbuffer
 - a function that shows how the data from the ringbuffer should be consumed (for example, printing to stdout)
 
@@ -103,7 +113,7 @@ Should you need additional user defined structures for this usecase, create head
 
 **config.cpp**
 - define the command line flags, along with validators, if needed
-- define a function to parse the flags for this usecase
+- define a function to parse the flags for this usecase, and call it in the `switch` in the constructor
 
 **main.cpp**
 - add a case for this particular usecase in the `switch` instruction
